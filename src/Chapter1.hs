@@ -54,13 +54,10 @@ for review only if you want some feedback on your solutions.
 
 Now, if you are ready, let's start!
 -}
-
 -- Single-line comments in Haskell start with --
-
 {- | This tutorial uses block comments to explain various concepts and provide
 task description.
 -}
-
 {- All code in Haskell is organised into modules. Each module corresponds to a
 single file. Modules then can be combined in a package. But you don't need to
 worry about this for now. We already created the package with module hierarchy
@@ -113,8 +110,6 @@ However, you are __strongly encouraged to write top-level function type
 signatures__ and provide types in different situations where you don't
 immediately see what types will be inferred.
 -}
-
-
  {-
 Haskell is a __compiled__ language. In the illustration below, you can see the
 overall picture of the process from your code to the binary of the written
@@ -186,7 +181,6 @@ To quit GHCi, enter the ":q" command (short for ":quit").
 ghci> :q
 
 -}
-
 {- |
 =⚔️= Task 1
 
@@ -209,31 +203,31 @@ So, the output in this example means that 'False' has type 'Bool'.
 > Try to guess first and then compare your expectations with GHCi output
 
 >>> :t True
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True :: Bool
 >>> :t 'a'
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+'a' :: Char
 >>> :t 42
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+42 :: Num p => p
 
 A pair of boolean and char:
 >>> :t (True, 'x')
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(True, 'x') :: (Bool, Char)
 
 Boolean negation:
 >>> :t not
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+not :: Bool -> Bool
 
 Boolean 'and' operator:
 >>> :t (&&)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(&&) :: Bool -> Bool -> Bool
 
 Addition of two numbers:
 >>> :t (+)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+(+) :: Num a => a -> a -> a
 
 Maximum of two values:
 >>> :t max
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+max :: Ord a => a -> a -> a
 
 You might not understand each type at this moment, but don't worry! You've only
 started your Haskell journey. Types will become your friends soon.
@@ -243,7 +237,6 @@ more. You've also seen the arrow "->" which is a function. When you see "A -> B
 -> C" you can think that this is a function that takes two arguments of types
 "A" and "B" and returns a value of type "C".
 -}
-
 {- |
 =⚔️= Task 2
 
@@ -301,43 +294,43 @@ expressions in GHCi
   functions and operators first. Remember this from the previous task? ;)
 
 >>> 1 + 2
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+3
 
 >>> 10 - 15
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+-5
 
 >>> 10 - (-5)  -- negative constants require ()
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+15
 
 >>> (3 + 5) < 10
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> True && False
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+False
 
 >>> 10 < 20 || 20 < 5
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> 2 ^ 10  -- power
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+1024
 
 >>> not False
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+True
 
 >>> div 20 3  -- integral division
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+6
 
 >>> mod 20 3  -- integral division remainder
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+2
 
 >>> max 4 10
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+10
 
 >>> min 5 (max 1 2)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+2
 
 >>> max (min 1 10) (min 5 7)
-<INSERT THE RESULT INSTEAD OF THE TEXT>
+5
 
 Because Haskell is a __statically-typed__ language, you see an error each time
 you try to mix values of different types in situations where you are not
@@ -355,8 +348,6 @@ stop you, right? You're a brave warrior, and you can finish all tasks despite
 all obstacles! And we are always here to help and to decrypt these ancient
 scripts together.
 -}
-
-
 {- |
 =🛡= Defining a function
 
@@ -409,7 +400,6 @@ roundSubtract x y = ceiling x - y
 
 Now you are ready for defining your own functions!
 -}
-
 {- |
 In our training, for some functions types are provided for you. For others, you
 need to write types manually to challenge yourself.
@@ -417,8 +407,6 @@ need to write types manually to challenge yourself.
 Don't forget the main rule:
 **Always provide type signatures for top-level functions in Haskell.**
 -}
-
-
 {- |
 =⚔️= Task 3
 
@@ -428,9 +416,8 @@ task is to specify the type of this function.
 >>> squareSum 3 4
 49
 -}
-
+squareSum :: Int -> Int -> Int
 squareSum x y = (x + y) * (x + y)
-
 
 {- |
 =⚔️= Task 4
@@ -449,7 +436,7 @@ Implement the function that takes an integer value and returns the next 'Int'.
   function body with the proper implementation.
 -}
 next :: Int -> Int
-next x = error "next: not implemented!"
+next = (+ 1)
 
 {- |
 After you've implemented the function (or even during the implementation), you
@@ -470,7 +457,6 @@ A typical workflow looks like this: you load the module once using the ":l"
 command, and then you should reload it using the ":r" command each time you
 change it and want to check your changes.
 -}
-
 {- |
 =⚔️= Task 5
 
@@ -490,8 +476,8 @@ Implement a function that returns the last digit of a given number.
   whether it works for you!
 -}
 -- DON'T FORGET TO SPECIFY THE TYPE IN HERE
-lastDigit n = error "lastDigit: Not implemented!"
-
+lastDigit :: Int -> Int
+lastDigit = (`mod` 10) . abs
 
 {- |
 =⚔️= Task 6
@@ -520,8 +506,10 @@ branches because it is an expression and it must always return some value.
   satisfying the check will be returned and, therefore, evaluated.
 -}
 closestToZero :: Int -> Int -> Int
-closestToZero x y = error "closestToZero: not implemented!"
-
+closestToZero x y =
+    if min (abs x) (abs y) == abs x
+        then x
+        else y
 
 {- |
 =⚔️= Task 7
@@ -529,6 +517,7 @@ Write a function that returns the middle number among three given numbers.
 
 >>> mid 3 1 2
 2
+
 
 🕯 HINT: When checking multiple conditions, it is more convenient to use the
   language construct called "guards" instead of multiple nested 'if-then-else'
@@ -553,8 +542,14 @@ value after "=" where the condition is true.
 
 Casual reminder about adding top-level type signatures for all functions :)
 -}
-
-mid x y z = error "mid: not implemented!"
+mid :: Int -> Int -> Int -> Int
+mid x y z
+  | smallest == x = min y z
+  | smallest == y = min x z
+  | smallest == z = min x y
+  | otherwise = x
+  where
+    smallest = minimum [x, y, z]
 
 {- |
 =⚔️= Task 8
@@ -568,8 +563,8 @@ True
 >>> isVowel 'x'
 False
 -}
-isVowel c = error "isVowel: not implemented!"
-
+isVowel :: Char -> Bool
+isVowel = (`elem` ['a', 'e', 'i', 'o', 'u'])
 
 {- |
 == Local variables and functions
@@ -615,7 +610,6 @@ pythagoras a b = square a + square b
 You can define multiple functions inside __where__!
 Just remember to keep proper indentation.
 -}
-
 {- |
 =⚔️= Task 9
 
@@ -631,9 +625,11 @@ Implement a function that returns the sum of the last two digits of a number.
 Try to introduce variables in this task (either with let-in or where) to avoid
 specifying complex expressions.
 -}
-
-sumLast2 n = error "sumLast2: Not implemented!"
-
+sumLast2 :: Int -> Int
+sumLast2 n = lastDig + secondToLastDig
+  where
+    lastDig = abs n `mod` 10
+    secondToLastDig = (`mod` 10) $ abs n `div` 10
 
 {- |
 =💣= Task 10*
@@ -652,15 +648,14 @@ Implement a function that returns the first digit of a given number.
 You need to use recursion in this task. Feel free to return to it later, if you
 aren't ready for this boss yet!
 -}
-
-firstDigit n = error "firstDigit: Not implemented!"
-
-
+firstDigit :: Int -> Int
+firstDigit n
+  | n `mod` 10 == n = n
+  | otherwise = firstDigit (n `div` 10)
 {-
-You did it! Now it is time to open a pull request with your changes
+You did it! it is time to open a pull request with your changes
 and summon @vrom911 and @chshersh for the review!
 -}
-
 {-
 =📜= Additional resources
 
