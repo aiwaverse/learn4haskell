@@ -559,14 +559,12 @@ value after "=" where the condition is true.
 Casual reminder about adding top-level type signatures for all functions :)
 -}
 mid :: Ord a => a -> a -> a -> a
-mid x y z | x `notElem` [smallest, largest] = x
-          | y `notElem` [smallest, largest] = y
-          | z `notElem` [smallest, largest] = z
-          | otherwise  = x
-  where 
-    smallest = minimum [x, y, z]
-    largest = maximum [x, y, z]
-
+mid x y z | x >= y && x <= z = x
+          | x >= z && x <= y = x
+          | y >= x && y <= z = y
+          | y >= z && y <= x = y
+          | otherwise = z
+          
 {- |
 =⚔️= Task 8
 
@@ -581,6 +579,7 @@ False
 -}
 
 -- I'm aware I can use elem, but I felt this way was on par with the question
+-- And more readable than guards
 isVowel :: Char -> Bool
 isVowel 'a' = True
 isVowel 'e' = True
@@ -653,7 +652,7 @@ specifying complex expressions.
 
 sumLast2 :: Int -> Int
 sumLast2 n = let digit1 = lastDigit n
-                 digit2 = (n `div` 10) `mod` 10
+                 digit2 = (abs n `div` 10) `mod` 10
              in digit1 + digit2
 
 
@@ -675,9 +674,8 @@ You need to use recursion in this task. Feel free to return to it later, if you
 aren't ready for this boss yet!
 -}
 firstDigit :: Int -> Int
-firstDigit n | n `div` 10 /= 0 = firstDigit (n `div` 10)
-             | otherwise = n
-
+firstDigit n = go (abs n)
+  where go m = if m `div` 10 /= 0 then go (m `div` 10) else m
 
 {-
 You did it! Now it is time to open a pull request with your changes
