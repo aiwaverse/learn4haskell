@@ -796,7 +796,17 @@ parametrise data types in places where values can be of any general type.
 🕯 HINT: 'Maybe' that some standard types we mentioned above are useful for
   maybe-treasure ;)
 -}
+data TreasureChest x = TreasureChest
+    { treasureChestGold :: Int
+    , treasureChestLoot :: x
+    }
 
+newtype Dragon p = Dragon {dragonPower :: p}
+
+data DragonLair p x = DragonLair
+                    { dragon :: Dragon p
+                    , treasure :: Maybe (TreasureChest x)
+                    }
 {-
 =🛡= Typeclasses
 
@@ -951,9 +961,25 @@ Implement instances of "Append" for the following types:
   ✧ *(Challenge): "Maybe" where append is appending of values inside "Just" constructors
 
 -}
+
+newtype Gold = Gold Int
+
 class Append a where
     append :: a -> a -> a
 
+instance Append Gold where
+    append :: Gold -> Gold -> Gold
+    append (Gold g1) (Gold g2) = Gold $ g1 + g2
+
+instance Append [a] where
+    append :: [a] -> [a] -> [a]
+    append = (++)
+
+instance Append a => Append (Maybe a) where
+    append :: Maybe a -> Maybe a -> Maybe a
+    append Nothing _           = Nothing
+    append _ Nothing           = Nothing
+    append (Just m1) (Just m2) = Just $ append m1 m2
 
 {-
 =🛡= Standard Typeclasses and Deriving
@@ -1014,6 +1040,29 @@ implement the following functions:
 
 🕯 HINT: to implement this task, derive some standard typeclasses
 -}
+
+data Day = Sunday
+         | Monday
+         | Tuesday
+         | Wednesday
+         | Thursday
+         | Friday
+         | Saturday
+         deriving (Show, Eq, Enum, Ord)
+
+isWeekend :: Day  -> Bool
+isWeekend Saturday = True
+isWeekend Sunday   = True
+isWeekend _        = False
+
+nextDay :: Day -> Day
+nextDay d = cycle [Sunday .. Saturday] !! (fromEnum d + 1)
+
+daysToParty :: Day -> Int
+daysToParty d = if Friday >= d then beforeFriday else afterFriday
+  where
+    beforeFriday = abs . (fromEnum Friday -) . fromEnum $ d
+    afterFriday = abs . (7 + fromEnum Friday -) . fromEnum $ d
 
 {-
 =💣= Task 9*
