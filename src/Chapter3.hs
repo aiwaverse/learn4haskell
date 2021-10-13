@@ -52,6 +52,7 @@ provide more top-level type signatures, especially when learning Haskell.
 {-# LANGUAGE InstanceSigs #-}
 
 module Chapter3 where
+import Data.List (foldl')
 
 {-
 =🛡= Types in Haskell
@@ -489,12 +490,13 @@ Create a simple enumeration for the meal types (e.g. breakfast). The one who
 comes up with the most number of names wins the challenge. Use your creativity!
 -}
 
-data Breakfast = Coffee
-               | Eggs
-               | Sausage
-               | Waffles
-               | Pancakes
-               | Toast
+data Meal = Breakfast
+          | Lunch
+          | Dinner
+          | Snack
+          | AfternoonCoffee
+          | Feast
+
 
 {- |
 =⚔️= Task 4
@@ -516,6 +518,49 @@ After defining the city, implement the following functions:
    and at least 10 living __people__ inside in all houses of the city in total.
 -}
 
+-- up to four people living in the house
+data House = One | Two | Three | Four deriving Show
+
+-- castle with a name and possibly a wall
+data Castle = Castle String Wall deriving Show
+
+-- the wall type, if true, wall was built
+newtype Wall = Wall Bool deriving Show
+
+-- Church or Library
+data Building = Church | Library deriving Show
+
+-- the wall is defined on the castle type, since they're related
+-- i.e. a wall doesn't exist without a castle
+data City = City
+  { castle :: Maybe Castle,
+    building :: Building,
+    houses :: [House]
+  } deriving Show
+
+-- builds a new castle without walls
+buildCastle :: City -> String -> City
+buildCastle c newCastleName = c {castle = Just $ Castle newCastleName (Wall False)}
+
+-- adds a new house with one person inside
+buildHouse :: City -> City
+buildHouse c@City {houses = hs} = c {houses = One : hs}
+
+buildWalls :: City -> City
+buildWalls c@(City (Just (Castle name _)) _ _) | hasEnoughPeople = c {castle = Just (Castle name (Wall True))}
+                                               | otherwise = c
+  where
+    hasEnoughPeople = countPeople c >= 10
+
+buildWalls c = c
+
+countPeople :: City -> Int
+countPeople City {houses = h} = foldl' (\a e -> a + countHouse e) 0 h
+  where
+    countHouse One = 1
+    countHouse Two = 2
+    countHouse Three = 3
+    countHouse Four = 4
 {-
 =🛡= Newtypes
 
