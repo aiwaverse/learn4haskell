@@ -1157,18 +1157,6 @@ data MonsterAction = RunAway deriving Show
 data BattleAttack = BattleAttack deriving Show
 data BattleAction = MonsterAc MonsterAction | KnightAc KnightAction deriving Show
 -- an action needs someone to be applied on
-class ActionSelf a b where
-  execute :: b -> a -> b
-
--- only knights can execute knight actions
-instance ActionSelf KnightAction Knight' where
-  execute :: Knight' -> KnightAction -> Knight'
-  execute k (DrinkPotion p) = increaseHp k p
-  execute k (CastSpell s) = increaseDefense k s
-
-instance ActionSelf MonsterAction Monster' where
-  execute :: Monster' -> MonsterAction -> Monster'
-  execute (Monster' ent _) _ = Monster' ent (Ran True ) 
 
 newtype Name = Name String deriving Show
 data Entity = Entity { eName :: Name
@@ -1178,10 +1166,10 @@ data Entity = Entity { eName :: Name
                      } deriving Show
 
 -- a datatype for monsters that ran away :D
-newtype Ran = Ran Bool
+newtype Ran = Ran Bool deriving Show
 
-data Monster' = Monster' Entity Ran
-data Knight' = Knight' Entity Defense
+data Monster' = Monster' Entity Ran deriving Show
+data Knight' = Knight' Entity Defense deriving Show
 
 class FighterAble a where
   increaseHp :: a -> Health -> a
@@ -1191,6 +1179,11 @@ class FighterAble a where
   increaseDefense :: a -> Defense -> a
   getDefenseVal :: a -> Int
   getActions :: a -> [Either BattleAction BattleAttack]
+  executeAction :: a -> BattleAction -> a
+  getAttackVal :: a -> Int
+  removeFirstAction :: a -> a
+  noActions :: a -> Bool
+  ranAway :: a -> Bool
 
 instance FighterAble Monster' where
   getHpVal :: Monster' -> Int
@@ -1210,6 +1203,24 @@ instance FighterAble Monster' where
   setHp :: Monster' -> Health -> Monster'
   setHp (Monster' e r) (Health new) = Monster' e{eHealth = Health new} r
 
+  executeAction :: Monster' -> BattleAction -> Monster'
+  executeAction _ (KnightAc _) = error "Monster can't execute Knight Action"
+  executeAction (Monster' e _) (MonsterAc RunAway) = Monster' e (Ran True)
+
+  getAttackVal :: Monster' -> Int
+  getAttackVal (Monster' Entity{eAttack = Attack a} _ ) = a
+
+  removeFirstAction :: Monster' -> Monster'
+  removeFirstAction (Monster' e@Entity{actions = (_ : xs)} r) = Monster' e{actions = xs} r
+  removeFirstAction (Monster' e@Entity{actions = []} r) = Monster' e{actions = []} r
+
+  noActions :: Monster' -> Bool
+  noActions (Monster' Entity{actions = []} _) = True
+  noActions _ = False
+
+  ranAway :: Monster' -> Bool
+  ranAway (Monster' _ (Ran t)) = t
+
 
 instance FighterAble Knight' where
   getHpVal :: Knight' -> Int
@@ -1227,17 +1238,66 @@ instance FighterAble Knight' where
   setHp :: Knight' -> Health -> Knight'
   setHp (Knight' e d) (Health new) = Knight' e{eHealth = Health new} d
 
+  executeAction :: Knight' -> BattleAction -> Knight'
+  executeAction _ (MonsterAc _) = error "Knight can't execute Monster Action"
+  executeAction k (KnightAc (DrinkPotion p)) = increaseHp k p
+  executeAction k (KnightAc (CastSpell s)) = increaseDefense k s
+
+  getAttackVal :: Knight' -> Int
+  getAttackVal (Knight' Entity{eAttack = Attack a} _ ) = a
+
+  removeFirstAction :: Knight' -> Knight'
+  removeFirstAction (Knight' e@Entity{actions = (_ : xs)} r) = Knight' e{actions = xs} r
+  removeFirstAction (Knight' e@Entity{actions = []} r) = Knight' e{actions = []} r
+
+  noActions :: Knight' -> Bool
+  noActions (Knight' Entity{actions = []} _) = True
+  noActions _ = False
+
+  -- A knight never runs away!
+  ranAway :: Knight' -> Bool
+  ranAway _ = False
 
 
-round :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
-round f1 f2 = undefined
+fullFight ::(FighterAble a, FighterAble b) => a -> b -> Either a b
+fullFight f1 f2 | length f1Actions /= length f2Actions = error "Both fighters need to have the same amount of actions."
+                | null f1Actions = Left f1 -- Winner is first fighter in case of no actions left
+                | getHpVal f2Half <= 0 = Left f1Half
+                | ranAway f1Half = Right f2Half
+                | getHpVal f1Full <= 0 = Right f2Full
+                | ranAway f2Full = Left f1Full
+                | otherwise = fullFight f1Full f2Full
+  where
+    f1Actions = getActions f1
+    f2Actions = getActions f2
+    (f1Half, f2Half) = fightRound f1 f2 -- f1 does the action
+    (f2Full, f1Full) = fightRound f2Half f1Half
+
+fightRound :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
+fightRound f1 f2 = case actionToRun of
+              Right _ -> fighterAttack (removeFirstAction f1) f2
+              Left ac -> (removeFirstAction $ executeAction f1 ac, f2)
   where
     actionsF1 = getActions f1
     actionToRun = head actionsF1 -- The list will be checked for empty on the fighting function
 
 
 fighterAttack :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
-fighterAttack f1 f2 = undefined
+fighterAttack f1 f2 = (f1, setHp f2 (Health $ getHpVal f2 - getAttackVal f1 + getDefenseVal f2))
+
+testKnightActions :: [Either BattleAction BattleAttack]
+testKnightActions = [ Left $ KnightAc (CastSpell (Defense 1))
+                    , Right BattleAttack]
+
+testMonsterActions :: [Either BattleAction BattleAttack]
+testMonsterActions = [ Right BattleAttack
+                     , Left $ MonsterAc RunAway]
+
+testKnight :: Knight'
+testKnight = Knight' (Entity (Name "Agatha") (Health 3) (Attack 1) testKnightActions) (Defense 0)
+
+testMonster :: Monster'
+testMonster = Monster' (Entity (Name "Evil Dragon") (Health 10) (Attack 2) testMonsterActions) (Ran False)
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
