@@ -1153,10 +1153,9 @@ data KnightAction = DrinkPotion Health
 data MonsterAction = RunAway deriving Show
 
 -- While I don't like to use "empty" types
--- This makes usage of Either possible, with only one "side" being on ActionSelf
+-- This makes usage of Either possible, with only one "side" being an attack
 data BattleAttack = BattleAttack deriving Show
 data BattleAction = MonsterAc MonsterAction | KnightAc KnightAction deriving Show
--- an action needs someone to be applied on
 
 newtype Name = Name String deriving Show
 data Entity = Entity { eName :: Name
