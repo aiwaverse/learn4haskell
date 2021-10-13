@@ -50,6 +50,7 @@ signatures in places where you can't by default. We believe it's helpful to
 provide more top-level type signatures, especially when learning Haskell.
 -}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Chapter3 where
 import Data.List (foldl')
@@ -641,13 +642,13 @@ introducing extra newtypes.
 🕯 HINT: if you complete this task properly, you don't need to change the
     implementation of the "hitPlayer" function at all!
 -}
-newtype Health = Health Int
-newtype Armor = Armor Int
-newtype Attack = Attack Int
-newtype Dexterity = Dexterity Int
-newtype Strength = Strength Int
-newtype Damage = Damage Int
-newtype Defense = Defense Int
+newtype Health = Health Int deriving Show
+newtype Armor = Armor Int deriving Show
+newtype Attack = Attack Int deriving Show
+newtype Dexterity = Dexterity Int deriving Show
+newtype Strength = Strength Int deriving Show
+newtype Damage = Damage Int deriving Show
+newtype Defense = Defense Int deriving Show
 
 data Player = Player
     { playerHealth    :: Health
@@ -655,7 +656,7 @@ data Player = Player
     , playerAttack    :: Attack
     , playerDexterity :: Dexterity
     , playerStrength  :: Strength
-    }
+    } deriving Show
 
 calculatePlayerDamage :: Attack -> Strength -> Damage
 calculatePlayerDamage (Attack a) (Strength s) = Damage $ a + s
@@ -1144,7 +1145,77 @@ Implement data types and typeclasses, describing such a battle between two
 contestants, and write a function that decides the outcome of a fight!
 -}
 
+data KnightAction = DrinkPotion Health
+                  | CastSpell Defense
+                  deriving Show
 
+-- ugly empty type
+data MonsterAction = RunAway deriving Show
+
+-- While I don't like to use "empty" types
+-- This makes usage of Either possible, with only one "side" being on ActionSelf
+data BattleAttack = BattleAttack deriving Show
+data BattleAction = MonsterAc MonsterAction | KnightAc KnightAction deriving Show
+-- an action needs someone to be applied on
+class ActionSelf a b where
+  execute :: b -> a -> b
+
+-- only knights can execute knight actions
+instance ActionSelf KnightAction Knight' where
+  execute :: Knight' -> KnightAction -> Knight'
+  execute k (DrinkPotion p) = increaseHp k p
+  execute k (CastSpell s) = increaseDefense k s
+
+instance ActionSelf MonsterAction Monster' where
+  execute :: Monster' -> MonsterAction -> Monster'
+  execute (Monster' ent _) _ = Monster' ent (Ran True ) 
+
+newtype Name = Name String deriving Show
+data Entity = Entity { eName :: Name
+                     , eHealth :: Health
+                     , eAttack :: Attack
+                     , actions :: [Either BattleAction BattleAttack]
+                     } deriving Show
+
+-- a datatype for monsters that ran away :D
+newtype Ran = Ran Bool
+
+data Monster' = Monster' Entity Ran
+data Knight' = Knight' Entity Defense
+
+class FighterAble a where
+  increaseHp :: a -> Health -> a
+  getHpVal :: a -> Int
+  increaseDefense :: a -> Defense -> a
+  getDefenseVal :: a -> Int
+
+instance FighterAble Monster' where
+  increaseHp :: Monster' -> Health -> Monster'
+  increaseHp (Monster' e@Entity{eHealth = Health h} r) (Health more) = Monster' e{eHealth = Health $ h + more} r
+
+  getHpVal :: Monster' -> Int
+  getHpVal (Monster' Entity{eHealth = Health h} _ ) = h
+
+  -- a monster has Nothing as defense, always, so this function does nothing
+  increaseDefense :: Monster' -> Defense -> Monster'
+  increaseDefense m _ = m
+
+  -- a defenseVal of Nothing is the same as no defense, i.e. zero
+  getDefenseVal :: Monster' -> Int
+  getDefenseVal _ = 0
+
+instance FighterAble Knight' where
+  increaseHp :: Knight' -> Health -> Knight'
+  increaseHp (Knight' e@Entity{eHealth = Health h} d) (Health more) = Knight' e{eHealth = Health $ h + more} d
+
+  getHpVal :: Knight' -> Int
+  getHpVal (Knight' Entity{eHealth = Health h} _) = h
+
+  increaseDefense :: Knight' -> Defense -> Knight'
+  increaseDefense (Knight' e (Defense d)) (Defense more) = Knight' e (Defense $ d + more)
+
+  getDefenseVal :: Knight' -> Int
+  getDefenseVal (Knight' _ (Defense d)) = d
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
