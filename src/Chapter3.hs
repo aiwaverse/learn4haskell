@@ -1185,14 +1185,14 @@ data Knight' = Knight' Entity Defense
 
 class FighterAble a where
   increaseHp :: a -> Health -> a
+  increaseHp fa (Health h) = setHp fa (Health $ h + getHpVal fa)
   getHpVal :: a -> Int
+  setHp :: a -> Health -> a
   increaseDefense :: a -> Defense -> a
   getDefenseVal :: a -> Int
+  getActions :: a -> [Either BattleAction BattleAttack]
 
 instance FighterAble Monster' where
-  increaseHp :: Monster' -> Health -> Monster'
-  increaseHp (Monster' e@Entity{eHealth = Health h} r) (Health more) = Monster' e{eHealth = Health $ h + more} r
-
   getHpVal :: Monster' -> Int
   getHpVal (Monster' Entity{eHealth = Health h} _ ) = h
 
@@ -1204,10 +1204,14 @@ instance FighterAble Monster' where
   getDefenseVal :: Monster' -> Int
   getDefenseVal _ = 0
 
-instance FighterAble Knight' where
-  increaseHp :: Knight' -> Health -> Knight'
-  increaseHp (Knight' e@Entity{eHealth = Health h} d) (Health more) = Knight' e{eHealth = Health $ h + more} d
+  getActions :: Monster' -> [Either BattleAction BattleAttack]
+  getActions (Monster' Entity{actions = a} _) = a
 
+  setHp :: Monster' -> Health -> Monster'
+  setHp (Monster' e r) (Health new) = Monster' e{eHealth = Health new} r
+
+
+instance FighterAble Knight' where
   getHpVal :: Knight' -> Int
   getHpVal (Knight' Entity{eHealth = Health h} _) = h
 
@@ -1216,6 +1220,24 @@ instance FighterAble Knight' where
 
   getDefenseVal :: Knight' -> Int
   getDefenseVal (Knight' _ (Defense d)) = d
+
+  getActions :: Knight' -> [Either BattleAction BattleAttack]
+  getActions (Knight' Entity{actions = a} _) = a
+
+  setHp :: Knight' -> Health -> Knight'
+  setHp (Knight' e d) (Health new) = Knight' e{eHealth = Health new} d
+
+
+
+round :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
+round f1 f2 = undefined
+  where
+    actionsF1 = getActions f1
+    actionToRun = head actionsF1 -- The list will be checked for empty on the fighting function
+
+
+fighterAttack :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
+fighterAttack f1 f2 = undefined
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
