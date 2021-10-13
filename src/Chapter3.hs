@@ -1157,7 +1157,10 @@ data MonsterAction = RunAway deriving Show
 data BattleAttack = BattleAttack deriving Show
 data BattleAction = MonsterAc MonsterAction | KnightAc KnightAction deriving Show
 
+-- A name to help identify them
 newtype Name = Name String deriving Show
+
+-- The true information holder for the knight and monster
 data Entity = Entity { eName :: Name
                      , eHealth :: Health
                      , eAttack :: Attack
@@ -1167,10 +1170,13 @@ data Entity = Entity { eName :: Name
 -- a datatype for monsters that ran away :D
 newtype Ran = Ran Bool deriving Show
 
+-- A monster can ran away, a knight has defense
 data Monster' = Monster' Entity Ran deriving Show
 data Knight' = Knight' Entity Defense deriving Show
 
+-- a lot of "getters/setters" and functions to be able to generalize the fight
 class FighterAble a where
+  -- an utility for the potions
   increaseHp :: a -> Health -> a
   increaseHp fa (Health h) = setHp fa (Health $ h + getHpVal fa)
   getHpVal :: a -> Int
@@ -1202,6 +1208,9 @@ instance FighterAble Monster' where
   setHp :: Monster' -> Health -> Monster'
   setHp (Monster' e r) (Health new) = Monster' e{eHealth = Health new} r
 
+  -- I dislike this solution with error, but after thinking for hours, I couldn't
+  -- come up with anything better without further splitting Knight and Monster apart
+  -- And that would kind of destroy the typeclasses purpose.
   executeAction :: Monster' -> BattleAction -> Monster'
   executeAction _ (KnightAc _) = error "Monster can't execute Knight Action"
   executeAction (Monster' e _) (MonsterAc RunAway) = Monster' e (Ran True)
@@ -1237,6 +1246,8 @@ instance FighterAble Knight' where
   setHp :: Knight' -> Health -> Knight'
   setHp (Knight' e d) (Health new) = Knight' e{eHealth = Health new} d
 
+  -- I dislike this solution with error, but after thinking for hours, I couldn't
+  -- come up with anything better without further splitting Knight and Monster apart
   executeAction :: Knight' -> BattleAction -> Knight'
   executeAction _ (MonsterAc _) = error "Knight can't execute Monster Action"
   executeAction k (KnightAc (DrinkPotion p)) = increaseHp k p
@@ -1257,7 +1268,10 @@ instance FighterAble Knight' where
   ranAway :: Knight' -> Bool
   ranAway _ = False
 
-
+-- the fight function, might be a little confusing but I hope it's not that bad
+-- Left means the first fighter won, and Right that the second won
+-- If they run out of actions, first fighter wins by default
+-- I expect both of them to have the same amount of actions, to be a fair fight
 fullFight ::(FighterAble a, FighterAble b) => a -> b -> Either a b
 fullFight f1 f2 | length f1Actions /= length f2Actions = error "Both fighters need to have the same amount of actions."
                 | null f1Actions = Left f1 -- Winner is first fighter in case of no actions left
@@ -1270,8 +1284,10 @@ fullFight f1 f2 | length f1Actions /= length f2Actions = error "Both fighters ne
     f1Actions = getActions f1
     f2Actions = getActions f2
     (f1Half, f2Half) = fightRound f1 f2 -- f1 does the action
-    (f2Full, f1Full) = fightRound f2Half f1Half
+    (f2Full, f1Full) = fightRound f2Half f1Half -- f2 does the action
 
+-- a round between f1 and f2, f1 does the action
+-- a "full" round would need to call this twice, as it is done
 fightRound :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
 fightRound f1 f2 = case actionToRun of
               Right _ -> fighterAttack (removeFirstAction f1) f2
@@ -1280,10 +1296,11 @@ fightRound f1 f2 = case actionToRun of
     actionsF1 = getActions f1
     actionToRun = head actionsF1 -- The list will be checked for empty on the fighting function
 
-
+-- an attack!
 fighterAttack :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
 fighterAttack f1 f2 = (f1, setHp f2 (Health $ getHpVal f2 - getAttackVal f1 + getDefenseVal f2))
 
+-- helper variables
 testKnightActions :: [Either BattleAction BattleAttack]
 testKnightActions = [ Left $ KnightAc (CastSpell (Defense 1))
                     , Right BattleAttack]
