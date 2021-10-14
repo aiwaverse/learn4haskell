@@ -630,7 +630,8 @@ Implement the 'Monad' instance for our 'Secret' type.
 -}
 instance Monad (Secret e) where
     (>>=) :: Secret e a -> (a -> Secret e b) -> Secret e b
-    (>>=) = error "bind Secret: Not implemented!"
+    Trap e >>=_ = Trap e
+    Reward r >>= f = f r
 
 {- |
 =⚔️= Task 7
@@ -640,6 +641,12 @@ Implement the 'Monad' instance for our lists.
 🕯 HINT: You probably will need to implement a helper function (or
   maybe a few) to flatten lists of lists to a single list.
 -}
+
+instance Monad List where
+  (>>=) :: List a -> (a -> List b) -> List b
+  Empty >>= _ = Empty
+  (Cons x xs) >>= f = append' (f x) (xs >>= f)
+
 
 
 {- |
@@ -658,8 +665,10 @@ Can you implement a monad version of AND, polymorphic over any monad?
 
 🕯 HINT: Use "(>>=)", "pure" and anonymous function
 -}
+-- weird expected behavior, I personally assumed it would be the same as
+-- liftM2 (&&), but that was not the case
 andM :: (Monad m) => m Bool -> m Bool -> m Bool
-andM = error "andM: Not implemented!"
+andM b1 b2 = b1 >>= (\b -> if not b then pure b else (&&) b <$> b2)
 
 {- |
 =🐉= Task 9*: Final Dungeon Boss
@@ -703,7 +712,14 @@ Specifically,
  ❃ Implement the function to convert Tree to list
 -}
 
+data Tree a = Nil
+            | Node a (Tree a) (Tree a)
 
+instance Functor Tree where
+  fmap _ Nil = Nil
+  fmap f (Node x left right) = Node (f x) (fmap f left) (fmap f right)
+
+reverseTree :: Tree a -> Tree a
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
