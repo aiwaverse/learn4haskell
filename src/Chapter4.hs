@@ -712,14 +712,24 @@ Specifically,
  ❃ Implement the function to convert Tree to list
 -}
 
+-- this felt a little easy for a final boss xD
+
 data Tree a = Nil
             | Node a (Tree a) (Tree a)
+            deriving Show
 
 instance Functor Tree where
   fmap _ Nil = Nil
   fmap f (Node x left right) = Node (f x) (fmap f left) (fmap f right)
 
 reverseTree :: Tree a -> Tree a
+reverseTree Nil = Nil
+reverseTree (Node x left right) = Node x (reverseTree right) (reverseTree left)
+
+treeToList :: Tree a -> [a]
+treeToList Nil = []
+treeToList (Node x left right) = x : (treeToList left ++ treeToList right)
+  
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
