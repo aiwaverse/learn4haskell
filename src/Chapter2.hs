@@ -39,6 +39,7 @@ Now, if you are ready, bring it on!
 -}
 
 module Chapter2 where
+import Data.List (foldl')
 
 {-
 =🛡= Imports
@@ -360,7 +361,7 @@ ghci> :l src/Chapter2.hs
 subList :: Int -> Int -> [a] -> [a]
 subList x y xs | x < 0 = []
                | y < 0 = []
-               | x - y > 0 = []
+               | x > y = []
                | otherwise = take (y - x + 1) . drop x $ xs
 
 {- |
@@ -651,10 +652,10 @@ Write a function that takes elements of a list only in even positions.
 [2,3,4]
 -}
 takeEven :: [a] -> [a]
-takeEven = go (0 :: Int)
-  where
-    go _ [] = []
-    go ind (y: ys) = if even ind then y : go (ind + 1) ys else go (ind + 1) ys
+takeEven [] = []
+takeEven [x] = [x]
+takeEven (x : _ : xxs) = x : takeEven xxs
+
 
 {- |
 =🛡= Higher-order functions
@@ -879,7 +880,8 @@ list.
 🕯 HINT: Use the 'cycle' function
 -}
 rotate :: Int -> [a] -> [a]
-rotate n xs = if n < 0 then [] else take listLength $ drop (listLength + n) (cycle xs)
+rotate n xs | n < 0 = []
+            | otherwise = take listLength $ drop  (n `mod` listLength) (cycle xs)
   where listLength = length xs
 
 {- |
@@ -896,9 +898,9 @@ and reverses it.
   function, but in this task, you need to implement it manually. No
   cheating!
 -}
+-- Is using fold considering cheating?
 rewind :: [a] -> [a]
-rewind [] = []
-rewind (x : xs) = rewind xs ++ [x]
+rewind = foldl' (flip (:)) []
 
 
 {-
