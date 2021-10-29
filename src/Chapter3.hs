@@ -520,13 +520,13 @@ After defining the city, implement the following functions:
 -}
 
 -- up to four people living in the house
-data House = One | Two | Three | Four deriving Show
+data House = One | Two | Three | Four deriving (Show, Enum)
 
 -- castle with a name and possibly a wall
 data Castle = Castle String Wall deriving Show
 
 -- the wall type, if true, wall was built
-newtype Wall = Wall Bool deriving Show
+data Wall = Wall | NoWall deriving Show
 
 -- Church or Library
 data Building = Church | Library deriving Show
@@ -541,14 +541,14 @@ data City = City
 
 -- builds a new castle without walls
 buildCastle :: City -> String -> City
-buildCastle c newCastleName = c {castle = Just $ Castle newCastleName (Wall False)}
+buildCastle c newCastleName = c {castle = Just $ Castle newCastleName NoWall}
 
 -- adds a new house with one person inside
 buildHouse :: City -> City
 buildHouse c@City {houses = hs} = c {houses = One : hs}
 
 buildWalls :: City -> City
-buildWalls c@(City (Just (Castle name _)) _ _) | hasEnoughPeople = c {castle = Just (Castle name (Wall True))}
+buildWalls c@(City (Just (Castle name _)) _ _) | hasEnoughPeople = c {castle = Just (Castle name Wall)}
                                                | otherwise = c
   where
     hasEnoughPeople = countPeople c >= 10
@@ -558,10 +558,7 @@ buildWalls c = c
 countPeople :: City -> Int
 countPeople City {houses = h} = foldl' (\a e -> a + countHouse e) 0 h
   where
-    countHouse One = 1
-    countHouse Two = 2
-    countHouse Three = 3
-    countHouse Four = 4
+    countHouse = (+1) . fromEnum
 {-
 =🛡= Newtypes
 
@@ -1101,8 +1098,12 @@ isWeekend Saturday = True
 isWeekend Sunday   = True
 isWeekend _        = False
 
+-- could also manually implement Enum and make this the behavior of succ
+-- but i think it would be equally complex
+-- like was said, this is dependant on what is the last day of the week
 nextDay :: Day -> Day
-nextDay d = cycle [Sunday .. Saturday] !! (fromEnum d + 1)
+nextDay Saturday = Sunday
+nextDay d = succ d
 
 daysToParty :: Day -> Int
 daysToParty d = if Friday >= d then beforeFriday else afterFriday
