@@ -52,6 +52,7 @@ provide more top-level type signatures, especially when learning Haskell.
 {-# LANGUAGE InstanceSigs #-}
 
 module Chapter3 where
+import Data.List (foldl')
 
 {-
 =🛡= Types in Haskell
@@ -344,6 +345,13 @@ of a book, but you are not limited only by the book properties we described.
 Create your own book type of your dreams!
 -}
 
+data Book = Book
+     { bookTitle     :: String
+     , bookAuthors   :: [String]
+     , bookEdition   :: Int
+     , bookPublisher :: String
+     }
+
 {- |
 =⚔️= Task 2
 
@@ -375,6 +383,26 @@ after the fight. The battle has the following possible outcomes:
 ♫ NOTE: In this task, you need to implement only a single round of the fight.
 
 -}
+
+data Monster = Monster
+               { monsterHealth :: Int
+               , monsterAttack :: Int
+               , monsterGold   :: Int
+               }
+
+data Knight = Knight
+               { knightHealth :: Int
+               , knightAttack :: Int
+               , knightGold   :: Int
+               }
+
+fight :: Monster -> Knight -> Int
+fight m k | newMonsterHealth <= 0 = knightGold k + monsterGold m
+          | newKnightHealth <= 0 = -1
+          | otherwise = knightGold k
+  where
+    newMonsterHealth = monsterHealth m - knightAttack k
+    newKnightHealth = knightHealth k - monsterAttack m
 
 {- |
 =🛡= Sum types
@@ -462,6 +490,14 @@ Create a simple enumeration for the meal types (e.g. breakfast). The one who
 comes up with the most number of names wins the challenge. Use your creativity!
 -}
 
+data Meal = Breakfast
+          | Lunch
+          | Dinner
+          | Snack
+          | AfternoonCoffee
+          | Feast
+
+
 {- |
 =⚔️= Task 4
 
@@ -482,6 +518,46 @@ After defining the city, implement the following functions:
    and at least 10 living __people__ inside in all houses of the city in total.
 -}
 
+-- up to four people living in the house
+data House = One | Two | Three | Four deriving (Show, Enum)
+
+-- castle with a name and possibly a wall
+data Castle = Castle String Wall deriving Show
+
+-- the wall type, if true, wall was built
+data Wall = Wall | NoWall deriving Show
+
+-- Church or Library
+data Building = Church | Library deriving Show
+
+-- the wall is defined on the castle type, since they're related
+-- i.e. a wall doesn't exist without a castle
+data City = City
+  { castle :: Maybe Castle,
+    building :: Building,
+    houses :: [House]
+  } deriving Show
+
+-- builds a new castle without walls
+buildCastle :: City -> String -> City
+buildCastle c newCastleName = c {castle = Just $ Castle newCastleName NoWall}
+
+-- adds a new house with one person inside
+buildHouse :: City -> City
+buildHouse c@City {houses = hs} = c {houses = One : hs}
+
+buildWalls :: City -> City
+buildWalls c@(City (Just (Castle name _)) _ _) | hasEnoughPeople = c {castle = Just (Castle name Wall)}
+                                               | otherwise = c
+  where
+    hasEnoughPeople = countPeople c >= 10
+
+buildWalls c = c
+
+countPeople :: City -> Int
+countPeople City {houses = h} = foldl' (\a e -> a + countHouse e) 0 h
+  where
+    countHouse = (+1) . fromEnum
 {-
 =🛡= Newtypes
 
@@ -562,22 +638,30 @@ introducing extra newtypes.
 🕯 HINT: if you complete this task properly, you don't need to change the
     implementation of the "hitPlayer" function at all!
 -}
+newtype Health = Health Int deriving Show
+newtype Armor = Armor Int deriving Show
+newtype Attack = Attack Int deriving Show
+newtype Dexterity = Dexterity Int deriving Show
+newtype Strength = Strength Int deriving Show
+newtype Damage = Damage Int deriving Show
+newtype Defense = Defense Int deriving Show
+
 data Player = Player
-    { playerHealth    :: Int
-    , playerArmor     :: Int
-    , playerAttack    :: Int
-    , playerDexterity :: Int
-    , playerStrength  :: Int
-    }
+    { playerHealth    :: Health
+    , playerArmor     :: Armor
+    , playerAttack    :: Attack
+    , playerDexterity :: Dexterity
+    , playerStrength  :: Strength
+    } deriving Show
 
-calculatePlayerDamage :: Int -> Int -> Int
-calculatePlayerDamage attack strength = attack + strength
+calculatePlayerDamage :: Attack -> Strength -> Damage
+calculatePlayerDamage (Attack a) (Strength s) = Damage $ a + s
 
-calculatePlayerDefense :: Int -> Int -> Int
-calculatePlayerDefense armor dexterity = armor * dexterity
+calculatePlayerDefense :: Armor -> Dexterity -> Defense
+calculatePlayerDefense (Armor a) (Dexterity d) = Defense $ a * d
 
-calculatePlayerHit :: Int -> Int -> Int -> Int
-calculatePlayerHit damage defense health = health + defense - damage
+calculatePlayerHit :: Damage -> Defense -> Health -> Health
+calculatePlayerHit (Damage dm) (Defense df) (Health h) = Health $ h + df - dm
 
 -- The second player hits first player and the new first player is returned
 hitPlayer :: Player -> Player -> Player
@@ -754,7 +838,17 @@ parametrise data types in places where values can be of any general type.
 🕯 HINT: 'Maybe' that some standard types we mentioned above are useful for
   maybe-treasure ;)
 -}
+data TreasureChest x = TreasureChest
+    { treasureChestGold :: Int
+    , treasureChestLoot :: x
+    }
 
+newtype Dragon p = Dragon {dragonPower :: p}
+
+data DragonLair p x = DragonLair
+                    { dragon :: Dragon p
+                    , treasure :: Maybe (TreasureChest x)
+                    }
 {-
 =🛡= Typeclasses
 
@@ -909,9 +1003,25 @@ Implement instances of "Append" for the following types:
   ✧ *(Challenge): "Maybe" where append is appending of values inside "Just" constructors
 
 -}
+
+newtype Gold = Gold Int
+
 class Append a where
     append :: a -> a -> a
 
+instance Append Gold where
+    append :: Gold -> Gold -> Gold
+    append (Gold g1) (Gold g2) = Gold $ g1 + g2
+
+instance Append [a] where
+    append :: [a] -> [a] -> [a]
+    append = (++)
+
+instance Append a => Append (Maybe a) where
+    append :: Maybe a -> Maybe a -> Maybe a
+    append Nothing _           = Nothing
+    append _ Nothing           = Nothing
+    append (Just m1) (Just m2) = Just $ append m1 m2
 
 {-
 =🛡= Standard Typeclasses and Deriving
@@ -973,6 +1083,33 @@ implement the following functions:
 🕯 HINT: to implement this task, derive some standard typeclasses
 -}
 
+data Day = Sunday
+         | Monday
+         | Tuesday
+         | Wednesday
+         | Thursday
+         | Friday
+         | Saturday
+         deriving (Show, Eq, Enum, Ord)
+
+isWeekend :: Day  -> Bool
+isWeekend Saturday = True
+isWeekend Sunday   = True
+isWeekend _        = False
+
+-- could also manually implement Enum and make this the behavior of succ
+-- but i think it would be equally complex
+-- like was said, this is dependant on what is the last day of the week
+nextDay :: Day -> Day
+nextDay Saturday = Sunday
+nextDay d = succ d
+
+daysToParty :: Day -> Int
+daysToParty d = if Friday >= d then beforeFriday else afterFriday
+  where
+    beforeFriday = abs . (fromEnum Friday -) . fromEnum $ d
+    afterFriday = abs . (7 + fromEnum Friday -) . fromEnum $ d
+
 {-
 =💣= Task 9*
 
@@ -1008,7 +1145,175 @@ Implement data types and typeclasses, describing such a battle between two
 contestants, and write a function that decides the outcome of a fight!
 -}
 
+data KnightAction = DrinkPotion Health
+                  | CastSpell Defense
+                  deriving Show
 
+-- ugly empty type
+data MonsterAction = RunAway deriving Show
+
+-- While I don't like to use "empty" types
+-- This makes usage of Either possible, with only one "side" being an attack
+data BattleAttack = BattleAttack deriving Show
+data BattleAction = MonsterAc MonsterAction | KnightAc KnightAction deriving Show
+
+-- A name to help identify them
+newtype Name = Name String deriving Show
+
+-- The true information holder for the knight and monster
+data Entity = Entity { eName :: Name
+                     , eHealth :: Health
+                     , eAttack :: Attack
+                     , actions :: [Either BattleAction BattleAttack]
+                     } deriving Show
+
+-- a datatype for monsters that ran away :D
+newtype Ran = Ran Bool deriving Show
+
+-- A monster can ran away, a knight has defense
+data Monster' = Monster' Entity Ran deriving Show
+data Knight' = Knight' Entity Defense deriving Show
+
+-- a lot of "getters/setters" and functions to be able to generalize the fight
+class FighterAble a where
+  -- an utility for the potions
+  increaseHp :: a -> Health -> a
+  increaseHp fa (Health h) = setHp fa (Health $ h + getHpVal fa)
+  getHpVal :: a -> Int
+  setHp :: a -> Health -> a
+  increaseDefense :: a -> Defense -> a
+  getDefenseVal :: a -> Int
+  getActions :: a -> [Either BattleAction BattleAttack]
+  executeAction :: a -> BattleAction -> a
+  getAttackVal :: a -> Int
+  removeFirstAction :: a -> a
+  noActions :: a -> Bool
+  ranAway :: a -> Bool
+
+instance FighterAble Monster' where
+  getHpVal :: Monster' -> Int
+  getHpVal (Monster' Entity{eHealth = Health h} _ ) = h
+
+  -- a monster has Nothing as defense, always, so this function does nothing
+  increaseDefense :: Monster' -> Defense -> Monster'
+  increaseDefense m _ = m
+
+  -- a defenseVal of Nothing is the same as no defense, i.e. zero
+  getDefenseVal :: Monster' -> Int
+  getDefenseVal _ = 0
+
+  getActions :: Monster' -> [Either BattleAction BattleAttack]
+  getActions (Monster' Entity{actions = a} _) = a
+
+  setHp :: Monster' -> Health -> Monster'
+  setHp (Monster' e r) (Health new) = Monster' e{eHealth = Health new} r
+
+  -- I dislike this solution with error, but after thinking for hours, I couldn't
+  -- come up with anything better without further splitting Knight and Monster apart
+  -- And that would kind of destroy the typeclasses purpose.
+  executeAction :: Monster' -> BattleAction -> Monster'
+  executeAction _ (KnightAc _) = error "Monster can't execute Knight Action"
+  executeAction (Monster' e _) (MonsterAc RunAway) = Monster' e (Ran True)
+
+  getAttackVal :: Monster' -> Int
+  getAttackVal (Monster' Entity{eAttack = Attack a} _ ) = a
+
+  removeFirstAction :: Monster' -> Monster'
+  removeFirstAction (Monster' e@Entity{actions = (_ : xs)} r) = Monster' e{actions = xs} r
+  removeFirstAction (Monster' e@Entity{actions = []} r) = Monster' e{actions = []} r
+
+  noActions :: Monster' -> Bool
+  noActions (Monster' Entity{actions = []} _) = True
+  noActions _ = False
+
+  ranAway :: Monster' -> Bool
+  ranAway (Monster' _ (Ran t)) = t
+
+
+instance FighterAble Knight' where
+  getHpVal :: Knight' -> Int
+  getHpVal (Knight' Entity{eHealth = Health h} _) = h
+
+  increaseDefense :: Knight' -> Defense -> Knight'
+  increaseDefense (Knight' e (Defense d)) (Defense more) = Knight' e (Defense $ d + more)
+
+  getDefenseVal :: Knight' -> Int
+  getDefenseVal (Knight' _ (Defense d)) = d
+
+  getActions :: Knight' -> [Either BattleAction BattleAttack]
+  getActions (Knight' Entity{actions = a} _) = a
+
+  setHp :: Knight' -> Health -> Knight'
+  setHp (Knight' e d) (Health new) = Knight' e{eHealth = Health new} d
+
+  -- I dislike this solution with error, but after thinking for hours, I couldn't
+  -- come up with anything better without further splitting Knight and Monster apart
+  executeAction :: Knight' -> BattleAction -> Knight'
+  executeAction _ (MonsterAc _) = error "Knight can't execute Monster Action"
+  executeAction k (KnightAc (DrinkPotion p)) = increaseHp k p
+  executeAction k (KnightAc (CastSpell s)) = increaseDefense k s
+
+  getAttackVal :: Knight' -> Int
+  getAttackVal (Knight' Entity{eAttack = Attack a} _ ) = a
+
+  removeFirstAction :: Knight' -> Knight'
+  removeFirstAction (Knight' e@Entity{actions = (_ : xs)} r) = Knight' e{actions = xs} r
+  removeFirstAction (Knight' e@Entity{actions = []} r) = Knight' e{actions = []} r
+
+  noActions :: Knight' -> Bool
+  noActions (Knight' Entity{actions = []} _) = True
+  noActions _ = False
+
+  -- A knight never runs away!
+  ranAway :: Knight' -> Bool
+  ranAway _ = False
+
+-- the fight function, might be a little confusing but I hope it's not that bad
+-- Left means the first fighter won, and Right that the second won
+-- If they run out of actions, first fighter wins by default
+-- I expect both of them to have the same amount of actions, to be a fair fight
+fullFight ::(FighterAble a, FighterAble b) => a -> b -> Either a b
+fullFight f1 f2 | length f1Actions /= length f2Actions = error "Both fighters need to have the same amount of actions."
+                | null f1Actions = Left f1 -- Winner is first fighter in case of no actions left
+                | getHpVal f2Half <= 0 = Left f1Half
+                | ranAway f1Half = Right f2Half
+                | getHpVal f1Full <= 0 = Right f2Full
+                | ranAway f2Full = Left f1Full
+                | otherwise = fullFight f1Full f2Full
+  where
+    f1Actions = getActions f1
+    f2Actions = getActions f2
+    (f1Half, f2Half) = fightRound f1 f2 -- f1 does the action
+    (f2Full, f1Full) = fightRound f2Half f1Half -- f2 does the action
+
+-- a round between f1 and f2, f1 does the action
+-- a "full" round would need to call this twice, as it is done
+fightRound :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
+fightRound f1 f2 = case actionToRun of
+              Right _ -> fighterAttack (removeFirstAction f1) f2
+              Left ac -> (removeFirstAction $ executeAction f1 ac, f2)
+  where
+    actionsF1 = getActions f1
+    actionToRun = head actionsF1 -- The list will be checked for empty on the fighting function
+
+-- an attack!
+fighterAttack :: (FighterAble a, FighterAble b) => a -> b -> (a, b)
+fighterAttack f1 f2 = (f1, setHp f2 (Health $ getHpVal f2 - getAttackVal f1 + getDefenseVal f2))
+
+-- helper variables
+testKnightActions :: [Either BattleAction BattleAttack]
+testKnightActions = [ Left $ KnightAc (CastSpell (Defense 1))
+                    , Right BattleAttack]
+
+testMonsterActions :: [Either BattleAction BattleAttack]
+testMonsterActions = [ Right BattleAttack
+                     , Left $ MonsterAc RunAway]
+
+testKnight :: Knight'
+testKnight = Knight' (Entity (Name "Agatha") (Health 3) (Attack 1) testKnightActions) (Defense 0)
+
+testMonster :: Monster'
+testMonster = Monster' (Entity (Name "Evil Dragon") (Health 10) (Attack 2) testMonsterActions) (Ran False)
 {-
 You did it! Now it is time to open pull request with your changes
 and summon @vrom911 and @chshersh for the review!
